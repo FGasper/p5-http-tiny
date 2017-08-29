@@ -1063,7 +1063,14 @@ sub connect {
         Proto     => 'tcp',
         Type      => SOCK_STREAM,
         Timeout   => $self->{timeout},
-    ) or die(qq/Could not connect to '$host:$port': $@\n/);
+    ) or do {
+        my $err = $@;
+
+        require HTTP::Tiny::Error;
+
+        $self->{'_last_error'} = HTTP::Tiny::Error::create('ConnectionFailure', $host, $port, $err);
+        die( $self->{'_last_error'}->to_string() . "\n" );
+    };
 
     binmode($self->{fh})
       or die(qq/Could not binmode() socket: '$!'\n/);
